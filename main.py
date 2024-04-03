@@ -4,6 +4,7 @@ import threading
 import time
 import datetime
 import cv2
+import extras
 from random import random
 from urllib.parse import urlparse
 from kivy.app import App
@@ -25,6 +26,11 @@ Window.size = (800, 600)
 
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 config = {
+    'newFolderPerSession':'True',
+    'activeTimes': [{
+        'start':'0',
+        'end':'24'
+    }],
     'images_folder': '',
     'sources': {}
 }
@@ -58,9 +64,12 @@ class AppLayout(Widget):
                 pass
 
         video_src = cv2.VideoCapture(source)
-        capture_folder = os.path.join(config['images_folder'], switch.parent.id,
+        capture_folder = "blank"
+        if bool(config["newFolderPerSession"]):
+            capture_folder = os.path.join(config['images_folder'], switch.parent.id,
                                       datetime.datetime.now().strftime("%d%m%y-%H%M%S-%f"))
-
+        else:
+            capture_folder = os.path.join(config['images_folder'], switch.parent.id)
         if video_src.isOpened():
             switch.disabled = False
             start_capture_time = time.time()
@@ -75,7 +84,7 @@ class AppLayout(Widget):
             if not video_src or not video_src.isOpened() or not retrieve:
                 break
 
-            if current_time - start_capture_time > interval:
+            if current_time - start_capture_time > interval and extras.active(config):
                 start_capture_time = current_time
                 if retrieve:
                     cv2.imwrite(path, frame,
